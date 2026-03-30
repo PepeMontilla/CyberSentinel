@@ -1,0 +1,25 @@
+# 🚫 Variables de entorno y secretos (¡CRÍTICO!)
+.env
+
+# 🐍 Entornos virtuales y archivos compilados de Python
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# 🗄️ Base de datos local
+# Ignoramos la base de datos para no pisar los datos de tus compañeros
+database/*.db
+database/*.sqlite3
+
+# 📂 Archivos temporales generados por la aplicación
+# Ignoramos el contenido, pero mantenemos las carpetas vivas
+uploads/*
+!uploads/.gitkeep
+reports/*
+!reports/.gitkeep
+
+# 💻 Archivos del sistema operativo
+.DS_Store
+Thumbs.db
