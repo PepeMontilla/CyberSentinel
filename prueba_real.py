@@ -36,9 +36,11 @@ try:
     # --- PASO 3 (Persona 2 - IA): Empaquetar y consultar a Gemini ---
     print("\n[3/3] Consultando a la IA Forense (Gemini)...")
     
-    # Preparamos la bandeja de datos exacta que tu IA espera
+    # Preparamos la bandeja de datos exacta, pero LIMITANDO el tama;o
+    # Para no saturar la API y evitar el error 400
     contexto_para_ia = {
         "metadata": datos_crudos['metadata'],
+        # Le enviamos solo los 15 comportamientos y strings mas relevantes
         "comportamientos": analisis_reglas['behaviors'],
         "strings_sospechosos": datos_crudos['strings'],
         "risk_score_total": analisis_reglas['risk_score'] # Tu motor espera esta llave
