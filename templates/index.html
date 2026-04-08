@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSentinel — Analizador de Malware</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0E6E6E;
+            --primary-dark: #085050;
+            --primary-light: #E8F4F4;
+            --danger: #C0392B;
+            --neutral: #F8F7F4;
+            --text: #1a1a1a;
+            --text-muted: #6B7280;
+            --border: #E2E0DB;
+            --white: #ffffff;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.10);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--neutral);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* NAV */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 60px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .nav-logo svg {
+            color: var(--primary);
+        }
+
+        .nav-logo span {
+            font-family: 'Noto Serif', serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .nav-links a:hover {
+            background: var(--neutral);
+            color: var(--text);
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            border-radius: 0;
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .nav-icon-btn:hover {
+            background: var(--neutral);
+            color: var(--text);
+        }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 64px 24px 40px;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-family: 'Noto Serif', serif;
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 4px;
+        }
+
+        .hero .highlight {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* DROP ZONE */
+        .upload-section {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 0 24px 48px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            background: var(--white);
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .drop-zone-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--primary-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            transition: transform 0.25s ease;
+            color: var(--primary);
+        }
+
+        .drop-zone:hover .drop-zone-icon,
+        .drop-zone.dragover .drop-zone-icon {
+            transform: scale(1.08);
+        }
+
+        .drop-zone h3 {
+            font-family: 'Noto Serif', serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .drop-zone p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* FILE SELECTED STATE */
+        .file-info {
+            display: none;
+            background: var(--neutral);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+            text-align: left;
+        }
+
+        .file-info.visible {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .file-info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-size {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .hash-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hash-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .hash-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--primary);
+            word-break: break-all;
+        }
+
+        .hash-computing {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            animation: hashCycle 0.05s infinite;
+        }
+
+        @keyframes hashCycle {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .badge-ok {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #D1FAE5;
+            color: #065F46;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* ANALYZE BUTTON */
+        .btn-analyze {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-analyze.visible {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .btn-analyze:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(14, 110, 110, 0.3);
+        }
+
+        .btn-analyze:active {
+            transform: translateY(0);
+        }
+
+        .btn-analyze.loading {
+            pointer-events: none;
+            background: var(--primary-dark);
+        }
+
+        .btn-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .btn-analyze.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-analyze.loading .btn-text {
+            opacity: 0.8;
+        }
+
+        /* PIPELINE */
+        .pipeline-section {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 0 24px 64px;
+        }
+
+        .pipeline-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .pipeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            position: relative;
+        }
+
+        .pipeline-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: calc(50% + 20px);
+            right: calc(-50% + 20px);
+            height: 2px;
+            background: var(--border);
+            transition: background 0.4s ease;
+            z-index: 0;
+        }
+
+        .pipeline-step.active:not(:last-child)::after {
+            background: var(--primary);
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.35s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .pipeline-step.active .step-icon {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-align: center;
+            transition: color 0.3s;
+        }
+
+        .pipeline-step.active .step-label {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* WATERMARK */
+        .watermark {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            font-family: 'Noto Serif', serif;
+            font-size: 80px;
+            font-weight: 700;
+            color: rgba(14, 110, 110, 0.06);
+            user-select: none;
+            pointer-events: none;
+            letter-spacing: -4px;
+        }
+
+        /* ANIMATIONS */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* MOBILE */
+        @media (max-width: 600px) {
+            nav {
+                padding: 0 16px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 40px 16px 24px;
+            }
+
+            .upload-section,
+            .pipeline-section {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .drop-zone {
+                padding: 32px 20px;
+            }
+
+            .pipeline-step:not(:last-child)::after {
+                display: none;
+            }
+
+            .pipeline {
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .watermark {
+                font-size: 48px;
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a class="nav-logo" href="{{ url_for('index') }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" />
+            </svg>
+            <span>CyberSentinel</span>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}" class="active">Upload</a></li>
+            <li><a href="{{ url_for('chat') }}">Forensic Chat</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <h1>Analiza cualquier .exe antes de ejecutarlo</h1>
+        <p>Detección estática de malware con inteligencia artificial.</p>
+        <p><span class="highlight">El archivo nunca se ejecuta.</span></p>
+    </section>
+
+    <section class="upload-section">
+        <div class="drop-zone" id="dropZone">
+            <input type="file" id="file-input" accept=".exe">
+            <div class="drop-zone-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <circle cx="11" cy="14" r="3" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+            </div>
+            <h3>Arrastra tu archivo .exe aquí</h3>
+            <p>O haz clic para explorar tus archivos locales</p>
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-info-row">
+                <span class="file-name">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span id="fileName">—</span>
+                </span>
+                <span class="badge-ok">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Listo
+                </span>
+            </div>
+            <div class="file-info-row">
+                <span class="hash-label">SHA-256</span>
+                <span class="hash-value" id="hashValue">
+                    <span class="hash-computing" id="hashComputing">Calculando...</span>
+                </span>
+            </div>
+            <div class="file-info-row" style="margin-top:6px; margin-bottom:0">
+                <span class="hash-label">Tamaño</span>
+                <span class="file-size" id="fileSize">—</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('analyze') }}" enctype="multipart/form-data" id="uploadForm">
+            <input type="file" name="file" id="hiddenFile" style="display:none" accept=".exe">
+            <button type="submit" class="btn-analyze" id="btnAnalyze">
+                <div class="btn-inner">
+                    <div class="spinner"></div>
+                    <span class="btn-text">Analizar archivo</span>
+                </div>
+            </button>
+        </form>
+    </section>
+
+    <section class="pipeline-section">
+        <p class="pipeline-label">Pipeline de análisis en tiempo real</p>
+        <div class="pipeline">
+            <div class="pipeline-step active" id="step1">
+                <div class="step-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 11 12 14 22 4" />
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                </div>
+                <span class="step-label">PE Structure</span>
+            </div>
+            <div class="pipeline-step" id="step2">
+                <div class="step-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+                    </svg>
+                </div>
+                <span class="step-label">Imports & APIs</span>
+            </div>
+            <div class="pipeline-step" id="step3">
+                <div class="step-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="4 7 4 4 20 4 20 7" />
+                        <line x1="9" y1="20" x2="15" y2="20" />
+                        <line x1="12" y1="4" x2="12" y2="20" />
+                    </svg>
+                </div>
+                <span class="step-label">Strings</span>
+            </div>
+            <div class="pipeline-step" id="step4">
+                <div class="step-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </div>
+                <span class="step-label">AI Verdict</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="watermark">CS</div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('file-input');
+        const hiddenFile = document.getElementById('hiddenFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+        const uploadForm = document.getElementById('uploadForm');
+
+        let selectedFile = null;
+
+        // Click to open file dialog
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Drag events
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.exe')) handleFile(file);
+            else alert('Solo se aceptan archivos .exe');
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) handleFile(fileInput.files[0]);
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatSize(file.size);
+            fileInfo.classList.add('visible');
+            btnAnalyze.classList.add('visible');
+
+            // Simulate hash computing animation then show simulated hash
+            const hashEl = document.getElementById('hashValue');
+            hashEl.innerHTML = '<span class="hash-computing" id="hashComputing">Calculando...</span>';
+
+            // Cycling characters animation
+            let chars = '0123456789abcdef';
+            let fakeHash = Array(64).fill(0).map(() => chars[Math.floor(Math.random() * 16)]).join('');
+            let interval = setInterval(() => {
+                fakeHash = Array(64).fill(0).map(() => chars[Math.floor(Math.random() * 16)]).join('');
+                document.getElementById('hashComputing').textContent = fakeHash;
+            }, 50);
+
+            // Lock in after 800ms
+            setTimeout(() => {
+                clearInterval(interval);
+                // Show a deterministic-looking hash based on filename
+                hashEl.textContent = generateFakeHash(file.name + file.size);
+            }, 800);
+
+            // Transfer file to hidden input for form submission
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            hiddenFile.files = dataTransfer.files;
+
+            // Activate pipeline step 1
+            activatePipelineStep(1);
+        }
+
+        function generateFakeHash(seed) {
+            // Simple deterministic-looking hash for display
+            let hash = '';
+            let chars = '0123456789abcdef';
+            for (let i = 0; i < 64; i++) {
+                hash += chars[(seed.charCodeAt(i % seed.length) + i * 7) % 16];
+            }
+            return hash;
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function activatePipelineStep(n) {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById('step' + i);
+                if (i <= n) step.classList.add('active');
+                else step.classList.remove('active');
+            }
+        }
+
+        // Form submit — show loading state and animate pipeline
+        uploadForm.addEventListener('submit', e => {
+            if (!selectedFile) { e.preventDefault(); return; }
+            btnAnalyze.classList.add('loading');
+            document.querySelector('.btn-text').textContent = 'Analizando...';
+
+            // Animate pipeline steps sequentially
+            let step = 1;
+            const pipelineInterval = setInterval(() => {
+                step++;
+                if (step <= 4) activatePipelineStep(step);
+                else clearInterval(pipelineInterval);
+            }, 600);
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSentinel — Resultado</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0E6E6E;
+            --primary-dark: #085050;
+            --primary-light: #E8F4F4;
+            --danger: #C0392B;
+            --danger-bg: #FEF2F2;
+            --danger-text: #991B1B;
+            --warning: #92400E;
+            --warning-bg: #FFFBEB;
+            --warning-text: #92400E;
+            --success: #166534;
+            --success-bg: #F0FDF4;
+            --success-text: #166534;
+            --neutral: #F8F7F4;
+            --text: #1a1a1a;
+            --text-muted: #6B7280;
+            --border: #E2E0DB;
+            --white: #ffffff;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.10);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--neutral);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* NAV */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 56px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 16px;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.15s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .back-btn:hover {
+            background: var(--neutral);
+            color: var(--text);
+        }
+
+        .nav-filename {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Pipeline compact */
+        .pipeline-compact {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex-shrink: 0;
+        }
+
+        .pc-step {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--primary);
+            position: relative;
+        }
+
+        .pc-step:not(:last-child)::after {
+            content: '—';
+            margin: 0 4px;
+            color: var(--border);
+        }
+
+        .pc-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .btn-pdf {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: 1.5px solid var(--primary);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn-pdf:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .nav-icon-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .nav-icon-btn:hover {
+            background: var(--neutral);
+            color: var(--text);
+        }
+
+        /* LAYOUT */
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: calc(100vh - 56px);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            position: sticky;
+            top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+        }
+
+        .meta-row {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 10px;
+        }
+
+        .meta-key {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .meta-val {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .meta-val.mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--primary);
+        }
+
+        .copy-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 2px;
+            border-radius: 4px;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+        }
+
+        .copy-btn:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* VT Ring */
+        .vt-card {
+            text-align: center;
+            padding: 4px 0;
+        }
+
+        .vt-ring-wrap {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 8px;
+        }
+
+        .vt-ring-wrap svg {
+            transform: rotate(-90deg);
+        }
+
+        .vt-number {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--danger);
+        }
+
+        .vt-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Risk gauge */
+        .risk-card {
+            text-align: center;
+        }
+
+        .risk-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .risk-arc-wrap {
+            width: 100%;
+            height: 36px;
+            margin: 8px 0 4px;
+        }
+
+        .risk-label-sm {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Sidebar nav */
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-nav a:hover {
+            background: var(--neutral);
+            color: var(--text);
+        }
+
+        .sidebar-nav a.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            padding: 32px;
+            max-width: 900px;
+        }
+
+        .content-section {
+            margin-bottom: 32px;
+            animation: fadeSlideUp 0.4s ease both;
+        }
+
+        .content-section:nth-child(2) {
+            animation-delay: 0.05s;
+        }
+
+        .content-section:nth-child(3) {
+            animation-delay: 0.1s;
+        }
+
+        .content-section:nth-child(4) {
+            animation-delay: 0.15s;
+        }
+
+        .content-section:nth-child(5) {
+            animation-delay: 0.2s;
+        }
+
+        .section-title {
+            font-family: 'Noto Serif', serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-badge {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: var(--neutral);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        /* VERDICT CARD */
+        .verdict-card {
+            background: var(--white);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            animation: fadeSlideUp 0.35s ease both;
+        }
+
+        .verdict-card.malicious {
+            border-left: 4px solid var(--danger);
+        }
+
+        .verdict-card.suspicious {
+            border-left: 4px solid #D97706;
+        }
+
+        .verdict-card.clean {
+            border-left: 4px solid var(--success);
+        }
+
+        .verdict-header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .verdict-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .malicious .verdict-icon {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+
+        .suspicious .verdict-icon {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        .clean .verdict-icon {
+            background: #D1FAE5;
+            color: var(--success);
+        }
+
+        .verdict-main {
+            flex: 1;
+        }
+
+        .verdict-title {
+            font-family: 'Noto Serif', serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .malicious .verdict-title {
+            color: var(--danger);
+        }
+
+        .suspicious .verdict-title {
+            color: #D97706;
+        }
+
+        .clean .verdict-title {
+            color: var(--success);
+        }
+
+        .verdict-confidence {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .confidence-bar-wrap {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s ease;
+        }
+
+        .malicious .confidence-bar {
+            background: var(--danger);
+        }
+
+        .suspicious .confidence-bar {
+            background: #D97706;
+        }
+
+        .clean .confidence-bar {
+            background: var(--success);
+        }
+
+        .confidence-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .verdict-explanation {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-muted);
+        }
+
+        .verdict-recomendaciones {
+            margin: 16px 24px;
+            background: #FFFBEB;
+            border-radius: 8px;
+            padding: 14px 16px;
+            border-left: 3px solid #D97706;
+        }
+
+        .recom-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #92400E;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .recom-text {
+            font-size: 13px;
+            color: #92400E;
+            line-height: 1.6;
+        }
+
+        /* TABLE */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--neutral);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table td {
+            padding: 11px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid #F3F3F0;
+            vertical-align: middle;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background: #FAFAF8;
+        }
+
+        .data-table tr.suspicious-row td {
+            background: #FEF2F2 !important;
+            border-left: 3px solid var(--danger);
+        }
+
+        .func-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        /* Severity badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-high {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .badge-medium {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-low {
+            background: #F1F5F9;
+            color: #475569;
+        }
+
+        /* ENTROPY BAR */
+        .entropy-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .entropy-bar-outer {
+            flex: 1;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+
+        .entropy-bar-inner {
+            height: 100%;
+            border-radius: 3px;
+            width: 0;
+            transition: width 0.8s ease;
+        }
+
+        .entropy-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* UPX CARD */
+        .upx-card {
+            background: var(--white);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .upx-card.detected {
+            border-left: 4px solid #D97706;
+            background: #FFFBEB;
+        }
+
+        .upx-card.clean-state {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upx-inner {
+            padding: 16px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .upx-icon {
+            width: 40px;
+            height: 40px;
+            background: #FEF3C7;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #D97706;
+            flex-shrink: 0;
+        }
+
+        .upx-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #92400E;
+            margin-bottom: 4px;
+        }
+
+        .upx-text {
+            font-size: 13px;
+            color: #92400E;
+            line-height: 1.5;
+        }
+
+        .upx-sections {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .upx-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 3px 8px;
+            background: #FEF3C7;
+            border: 1px solid #D97706;
+            border-radius: 4px;
+            color: #92400E;
+        }
+
+        /* STRINGS */
+        .strings-block {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .string-item {
+            padding: 9px 16px;
+            border-bottom: 1px solid #F3F3F0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+            border-left: 3px solid transparent;
+            transition: background 0.15s;
+            word-break: break-all;
+        }
+
+        .string-item:last-child {
+            border-bottom: none;
+        }
+
+        .string-item:hover {
+            background: var(--neutral);
+        }
+
+        .string-item.danger {
+            border-left-color: var(--danger);
+            color: #991B1B;
+        }
+
+        .string-item.warning {
+            border-left-color: #D97706;
+            color: #92400E;
+        }
+
+        .string-item.info {
+            border-left-color: var(--primary);
+            color: var(--primary-dark);
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0;
+                padding: 16px;
+            }
+
+            .sidebar-section {
+                margin-bottom: 0;
+                padding: 12px;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+
+            .pipeline-compact {
+                display: none;
+            }
+
+            .nav-filename {
+                max-width: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                grid-template-columns: 1fr;
+            }
+
+            .verdict-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="nav-left">
+            <a class="back-btn" href="{{ url_for('index') }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Volver
+            </a>
+            <div>
+                <div class="nav-label">Analizando:</div>
+                <div class="nav-filename">{{ pe.metadata.filename }}</div>
+            </div>
+        </div>
+
+        <div class="pipeline-compact">
+            <div class="pc-step">
+                <div class="pc-dot"></div> PE Structure
+            </div>
+            <div class="pc-step">
+                <div class="pc-dot"></div> Imports
+            </div>
+            <div class="pc-step">
+                <div class="pc-dot"></div> Strings
+            </div>
+            <div class="pc-step">
+                <div class="pc-dot"></div> AI Verdict
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px;">
+            <a class="btn-pdf" href="{{ url_for('download_report') }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Descargar reporte PDF
+            </a>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-label">File Attributes</div>
+                <div class="meta-row">
+                    <span class="meta-key">Archivo</span>
+                    <span class="meta-val">{{ pe.metadata.filename }}</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-key">Tamaño</span>
+                    <span class="meta-val">{{ "%.1f"|format(pe.metadata.size_bytes / (1024*1024)) }} MB</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-key">SHA-256</span>
+                    <div class="copy-row">
+                        <span class="meta-val mono" id="sha256val">{{ pe.metadata.sha256[:20] }}...</span>
+                        <button class="copy-btn" onclick="copyHash('{{ pe.metadata.sha256 }}')" title="Copiar hash">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">VirusTotal</div>
+                <div class="vt-card">
+                    <div class="vt-ring-wrap">
+                        <svg width="80" height="80" viewBox="0 0 80 80">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="#E2E0DB" stroke-width="6" />
+                            {% set vt_dash = ((vt.malicioso / vt.total_motores * 201.06)|round|int ~ " 201.06") if vt.encontrado else "0 201.06" %}
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="#C0392B" stroke-width="6"
+                                stroke-dasharray="{{ vt_dash }}"
+                                stroke-linecap="round" id="vtRing" style="transition: stroke-dasharray 0.8s ease;" />
+                        </svg>
+                        <div class="vt-number">
+                            {% if vt.encontrado %}{{ vt.malicioso }}{% else %}?{% endif %}
+                        </div>
+                    </div>
+                    <div class="vt-label">
+                        {% if vt.encontrado %}
+                        de {{ vt.total_motores }} motores
+                        {% else %}
+                        Hash desconocido
+                        {% endif %}
+                    </div>
+                    {% if vt.encontrado %}
+                    <a href="{{ vt.link_reporte }}" target="_blank"
+                        style="display:inline-block; margin-top:8px; font-size:12px; color:var(--primary); text-decoration:none; font-weight:500;">
+                        Ver en VirusTotal →
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Nivel de Riesgo</div>
+                <div class="risk-card">
+                    {% set risk_color = "var(--danger)" if reglas.risk_score >= 50 else "#D97706" if reglas.risk_score >= 20 else "var(--success)" %}
+                    {% set risk_attr = 'style="color: ' ~ risk_color ~ '"' %}
+                    <div class="risk-number" id="riskNum" {{ risk_attr|safe }}>
+                        0
+                    </div>
+                    <div class="risk-arc-wrap">
+                        <svg width="100%" height="36" viewBox="0 0 200 36">
+                            <path d="M 10 36 A 90 90 0 0 1 190 36" fill="none" stroke="#E2E0DB" stroke-width="8"
+                                stroke-linecap="round" />
+                            {% set stroke_val = "#C0392B" if reglas.risk_score >= 50 else "#D97706" if reglas.risk_score >= 20 else "#166534" %}
+                            <path d="M 10 36 A 90 90 0 0 1 190 36" fill="none"
+                                stroke="{{ stroke_val }}"
+                                stroke-width="8" stroke-linecap="round" stroke-dasharray="0 283" id="riskArc"
+                                style="transition: stroke-dasharray 0.8s ease;" />
+                        </svg>
+                    </div>
+                    <div class="risk-label-sm">/ 100 puntos</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section sidebar-nav">
+                <div class="sidebar-label">Secciones</div>
+                <a href="#veredicto" class="active">Veredicto</a>
+                <a href="#winapi">WinAPI Behaviors</a>
+                <a href="#secciones">Secciones PE</a>
+                <a href="#upx">UPX</a>
+                <a href="#strings">Strings</a>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main-content">
+
+            <!-- VERDICT -->
+            <div id="veredicto" class="content-section">
+                {% set v_class = 'malicious' if veredicto.veredicto == 'Malicioso' else 'suspicious' if veredicto.veredicto == 'Sospechoso' else 'clean' %}
+                <div class="verdict-card {{ v_class }}">
+                    <div class="verdict-header">
+                        <div class="verdict-icon">
+                            {% if veredicto.veredicto == 'Malicioso' %}
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                            {% elif veredicto.veredicto == 'Sospechoso' %}
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            {% else %}
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="verdict-main">
+                            <div class="verdict-title">{{ veredicto.veredicto|upper }}</div>
+                            <div class="verdict-confidence">
+                                <div class="confidence-bar-wrap">
+                                    <div class="confidence-bar" id="confBar" style="width: 0%"></div>
+                                </div>
+                                <span class="confidence-pct">{{ veredicto.confianza }}%</span>
+                            </div>
+                            <p class="verdict-explanation">{{ veredicto.explicacion_tecnica }}</p>
+                        </div>
+                    </div>
+                    <div class="verdict-recomendaciones">
+                        <div class="recom-label">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            </svg>
+                            Recomendaciones
+                        </div>
+                        <p class="recom-text">{{ veredicto.recomendaciones }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WINAPI -->
+            <div id="winapi" class="content-section">
+                <h2 class="section-title">
+                    Comportamiento WinAPI
+                    <span class="section-badge">{{ reglas.behaviors|length }} llamadas sospechosas</span>
+                </h2>
+                {% if reglas.behaviors %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Función</th>
+                            <th>Severidad</th>
+                            <th>Contexto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in reglas.behaviors %}
+                        <tr>
+                            <td><span class="func-mono">{{ b.function }}</span></td>
+                            <td>
+                                <span class="badge badge-{{ b.severity|lower }}">{{ b.severity }}</span>
+                            </td>
+                            <td style="color: var(--text-muted); font-size: 13px;">{{ b.description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p
+                    style="color: var(--text-muted); font-size: 14px; padding: 16px; background: var(--white); border-radius: 10px; border: 1px solid var(--border);">
+                    No se detectaron llamadas WinAPI peligrosas.</p>
+                {% endif %}
+            </div>
+
+            <!-- SECCIONES PE -->
+            <div id="secciones" class="content-section">
+                <h2 class="section-title">
+                    Secciones PE
+                    <span class="section-badge">{{ pe.secciones|length }} secciones</span>
+                    {% if pe.secciones_sospechosas %}
+                    <span class="section-badge" style="background:#FEE2E2; color:#991B1B; border-color:#FECACA;">{{
+                        pe.secciones_sospechosas|length }} sospechosas</span>
+                    {% endif %}
+                </h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Tamaño virtual</th>
+                            <th>Entropy</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in pe.secciones %}
+                        <tr class="{{ 'suspicious-row' if s.sospechosa else '' }}">
+                            <td><span class="func-mono">{{ s.nombre }}</span></td>
+                            <td
+                                style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">
+                                {{ "%.1f"|format(s.tamano_virtual / 1024) }} KB
+                            </td>
+                            <td>
+                                <div class="entropy-wrap">
+                                    <div class="entropy-bar-outer">
+                                        {% set ent_w = (s.entropy / 8 * 100)|round|int %}
+                                        {% set ent_bg = "#C0392B" if s.entropy > 7 else "#D97706" if s.entropy > 5 else "#166534" %}
+                                        {% set ent_style = "width: " ~ ent_w ~ "%; background: " ~ ent_bg ~ ";" %}
+                                        {% set ent_attr = 'style="' ~ ent_style ~ '"' %}
+                                        <div class="entropy-bar-inner" {{ ent_attr|safe }}
+                                            data-width="{{ ent_w }}">
+                                        </div>
+                                    </div>
+                                    <span class="entropy-num">{{ s.entropy }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if s.sospechosa %}
+                                <span class="badge badge-high">Sospechosa</span>
+                                {% else %}
+                                <span class="badge badge-low">Normal</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- UPX -->
+            <div id="upx" class="content-section">
+                <h2 class="section-title">Empaquetado UPX</h2>
+                <div class="upx-card {{ 'detected' if pe.upx.detectado else '' }}">
+                    {% if pe.upx.detectado %}
+                    <div class="upx-inner">
+                        <div class="upx-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="upx-title">Empaquetado Detectado</div>
+                            <p class="upx-text">{{ pe.upx.motivo }}</p>
+                            <div class="upx-sections">
+                                {% for s in pe.upx.secciones_encontradas %}
+                                <span class="upx-chip">{{ s }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="upx-card clean-state">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span style="font-size: 13px; color: #166534; font-weight: 500;">No se detectó empaquetado
+                            UPX.</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- STRINGS -->
+            <div id="strings" class="content-section">
+                <h2 class="section-title">
+                    Strings Sospechosos
+                    <span class="section-badge">{{ pe.strings|length }} encontrados</span>
+                </h2>
+                {% if pe.strings %}
+                <div class="strings-block">
+                    {% for s in pe.strings %}
+                    {% set s_lower = s|lower %}
+                    {% set is_danger = 'shutdown' in s_lower or 'cmd' in s_lower or 'powershell' in s_lower %}
+                    {% set is_info = 'http' in s_lower or 'ftp' in s_lower %}
+                    {% set is_warning = 'hkey' in s_lower or 'reg' in s_lower %}
+                    {% set s_class = 'danger' if is_danger else 'info' if is_info else 'warning' if is_warning else '' %}
+                    <div class="string-item {{ s_class }}">
+                        {{ s }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p
+                    style="color: var(--text-muted); font-size: 14px; padding: 16px; background: var(--white); border-radius: 10px; border: 1px solid var(--border);">
+                    No se encontraron strings sospechosos.</p>
+                {% endif %}
+            </div>
+
+            <!-- CHAT BTN -->
+            <div style="margin-top: 8px; margin-bottom: 48px;">
+                <a href="{{ url_for('chat') }}"
+                    style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Abrir Asistente Forense
+                </a>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Animate confidence bar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const bar = document.getElementById('confBar');
+                if (bar) bar.style.width = '{{ veredicto.confianza }}%';
+            }, 300);
+
+            // Animate risk score counter
+            const target = parseInt("{{ reglas.risk_score }}", 10) || 0;
+            const el = document.getElementById('riskNum');
+            let current = 0;
+            const step = target / 40;
+            const counter = setInterval(() => {
+                current = Math.min(current + step, target);
+                el.textContent = Math.round(current);
+                if (current >= target) clearInterval(counter);
+            }, 20);
+
+            // Animate risk arc
+            const arc = document.getElementById('riskArc');
+            if (arc) {
+                setTimeout(() => {
+                    const pct = Math.min(target, 100) / 100;
+                    arc.style.strokeDasharray = `${pct * 283} 283`;
+                }, 300);
+            }
+
+            // Animate entropy bars on scroll
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.querySelectorAll('.entropy-bar-inner').forEach(bar => {
+                            const w = bar.dataset.width;
+                            setTimeout(() => { bar.style.width = w + '%'; }, 100);
+                        });
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('#secciones').forEach(el => observer.observe(el));
+        });
+
+        // Stagger table rows
+        document.querySelectorAll('.data-table tbody tr').forEach((row, i) => {
+            row.style.animation = `fadeSlideUp 0.3s ease ${i * 0.04}s both`;
+        });
+
+        // Copy hash
+        function copyHash(hash) {
+            navigator.clipboard.writeText(hash).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0E6E6E" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+                setTimeout(() => {
+                    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                }, 1500);
+            });
+        }
+    </script>
+</body>
+
+</html>

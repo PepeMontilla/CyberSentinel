@@ -1,4 +1,5 @@
 import hashlib
+import math
 import os
 import pefile
 
@@ -20,6 +21,9 @@ PATRONES_SOSPECHOSOS = [
     "invoke-expression", "iex(", "bypass",
 ]
 
+# Umbral de entropy a partir del cual una sección se considera sospechosa
+ENTROPY_UMBRAL = 7.0
+
 
 def _calcular_sha256(ruta_archivo: str) -> str:
     """Calcula el hash SHA-256 del archivo en bloques para no cargar todo en RAM."""
@@ -32,6 +36,104 @@ def _calcular_sha256(ruta_archivo: str) -> str:
         print(f"[ERROR] No se pudo calcular el hash: {e}")
         return ""
     return sha256.hexdigest()
+
+
+def _calcular_entropy(data: bytes) -> float:
+    """
+    Calcula la entropía de Shannon de un bloque de bytes.
+    Rango: 0.0 (todos iguales) a 8.0 (totalmente aleatorio).
+    Valores > 7.0 indican datos comprimidos, cifrados o empaquetados.
+    """
+    if not data:
+        return 0.0
+
+    # Contar frecuencia de cada byte posible (0-255)
+    frecuencias = [0] * 256
+    for byte in data:
+        frecuencias[byte] += 1
+
+    total = len(data)
+    entropia = 0.0
+
+    for freq in frecuencias:
+        if freq > 0:
+            probabilidad = freq / total
+            entropia -= probabilidad * math.log2(probabilidad)
+
+    return round(entropia, 4)
+
+
+def _analizar_secciones(pe: pefile.PE) -> tuple:
+    """
+    Analiza todas las secciones del PE.
+    Devuelve:
+      - lista de todas las secciones con su entropy
+      - lista de secciones sospechosas (entropy > ENTROPY_UMBRAL)
+    """
+    todas_secciones = []
+    secciones_sospechosas = []
+
+    for seccion in pe.sections:
+        try:
+            nombre = seccion.Name.decode("utf-8", errors="replace").strip().rstrip("\x00")
+            datos = seccion.get_data()
+            entropy = _calcular_entropy(datos)
+
+            info_seccion = {
+                "nombre": nombre,
+                "tamano_virtual": seccion.Misc_VirtualSize,
+                "tamano_raw": seccion.SizeOfRawData,
+                "entropy": entropy,
+                "sospechosa": entropy > ENTROPY_UMBRAL
+            }
+
+            todas_secciones.append(info_seccion)
+
+            # Si supera el umbral, la marcamos aparte con explicación
+            if entropy > ENTROPY_UMBRAL:
+                secciones_sospechosas.append({
+                    "nombre": nombre,
+                    "entropy": entropy,
+                    "motivo": f"Entropy {entropy} supera el umbral de {ENTROPY_UMBRAL} — posible código empaquetado o cifrado"
+                })
+
+        except Exception:
+            continue
+
+    return todas_secciones, secciones_sospechosas
+
+
+def _detectar_upx(pe: pefile.PE) -> dict:
+    """
+    Detecta si el ejecutable fue empaquetado con UPX.
+    UPX es el packer más usado para ocultar malware de los antivirus.
+    Lo detectamos buscando sus secciones características: UPX0, UPX1, UPX2.
+    """
+    nombres_secciones = []
+
+    for seccion in pe.sections:
+        try:
+            nombre = seccion.Name.decode("utf-8", errors="replace").strip().rstrip("\x00")
+            nombres_secciones.append(nombre.upper())
+        except Exception:
+            continue
+
+    secciones_upx = [n for n in nombres_secciones if n.startswith("UPX")]
+
+    if secciones_upx:
+        return {
+            "detectado": True,
+            "secciones_encontradas": secciones_upx,
+            "riesgo": "ALTO",
+            "motivo": "El ejecutable está empaquetado con UPX. Esta técnica se usa para ocultar el código real del binario y evadir antivirus."
+        }
+
+    return {
+        "detectado": False,
+        "secciones_encontradas": [],
+        "riesgo": "NINGUNO",
+        "motivo": "No se detectó empaquetado UPX."
+    }
 
 
 def _extraer_imports(pe: pefile.PE) -> dict:
@@ -52,11 +154,9 @@ def _extraer_imports(pe: pefile.PE) -> dict:
 
             for importacion in entrada.imports:
                 if importacion.name:
-                    # Conservamos la capitalización exacta para que rules_engine haga match
                     nombre_func = importacion.name.decode("utf-8", errors="replace")
                     funciones.append(nombre_func)
                 else:
-                    # Import por ordinal (sin nombre), lo registramos igual
                     funciones.append(f"Ordinal_{importacion.ordinal}")
 
             if funciones:
@@ -82,10 +182,9 @@ def _extraer_strings(ruta_archivo: str, min_longitud: int = 5) -> list:
         print(f"[ERROR] No se pudo leer el archivo para extraer strings: {e}")
         return []
 
-    # Extraer strings ASCII (caracteres imprimibles consecutivos)
     string_actual = []
     for byte in contenido:
-        if 32 <= byte <= 126:  # Rango ASCII imprimible
+        if 32 <= byte <= 126:
             string_actual.append(chr(byte))
         else:
             if len(string_actual) >= min_longitud:
@@ -94,22 +193,19 @@ def _extraer_strings(ruta_archivo: str, min_longitud: int = 5) -> list:
                     strings_encontrados.add(texto)
             string_actual = []
 
-    # Capturar el último string si quedó pendiente
     if len(string_actual) >= min_longitud:
         texto = "".join(string_actual).strip()
         if texto:
             strings_encontrados.add(texto)
 
-    # Filtrar solo los que contienen patrones sospechosos
     strings_filtrados = []
     for texto in strings_encontrados:
         texto_lower = texto.lower()
         for patron in PATRONES_SOSPECHOSOS:
             if patron in texto_lower:
                 strings_filtrados.append(texto)
-                break  # No agregar el mismo string más de una vez
+                break
 
-    # Ordenar y limitar a 50 para no saturar la IA
     strings_filtrados.sort()
     return strings_filtrados[:50]
 
@@ -121,13 +217,15 @@ def parse_exe(ruta_archivo: str) -> dict:
 
     Estructura de retorno:
     {
-        "metadata": {"filename": str, "sha256": str, "size_bytes": int},
-        "imports":  {"dll_name": ["func1", "func2"]},
-        "strings":  ["string_sospechoso_1", ...]
+        "metadata":              {...},
+        "imports":               {...},
+        "strings":               [...],
+        "secciones":             [...],   <- NUEVO: todas las secciones con entropy
+        "secciones_sospechosas": [...],   <- NUEVO: solo las que superan 7.0
+        "upx":                   {...}    <- NUEVO: resultado de detección UPX
     }
     """
 
-    # Validar que el archivo existe
     if not os.path.isfile(ruta_archivo):
         print(f"[ERROR] Archivo no encontrado: {ruta_archivo}")
         return {}
@@ -151,6 +249,9 @@ def parse_exe(ruta_archivo: str) -> dict:
             "metadata": {"filename": nombre_archivo, "sha256": sha256, "size_bytes": tamanio_bytes},
             "imports": {},
             "strings": [],
+            "secciones": [],
+            "secciones_sospechosas": [],
+            "upx": {"detectado": False},
             "error": "Archivo no es un PE válido."
         }
     except Exception as e:
@@ -168,6 +269,21 @@ def parse_exe(ruta_archivo: str) -> dict:
     strings = _extraer_strings(ruta_archivo)
     print(f"    → {len(strings)} strings sospechosos encontrados")
 
+    # Secciones + Entropy  ← NUEVO
+    print("[*] Analizando secciones y calculando entropy...")
+    secciones, secciones_sospechosas = _analizar_secciones(pe)
+    print(f"    → {len(secciones)} secciones totales | {len(secciones_sospechosas)} sospechosas")
+    for s in secciones_sospechosas:
+        print(f"       ⚠  {s['nombre']} — entropy {s['entropy']}")
+
+    # Detección UPX  ← NUEVO
+    print("[*] Verificando empaquetado UPX...")
+    upx = _detectar_upx(pe)
+    if upx["detectado"]:
+        print(f"    → ⚠  UPX DETECTADO: {upx['secciones_encontradas']}")
+    else:
+        print("    → Sin empaquetado UPX")
+
     pe.close()
 
     resultado = {
@@ -177,18 +293,21 @@ def parse_exe(ruta_archivo: str) -> dict:
             "size_bytes": tamanio_bytes
         },
         "imports": imports,
-        "strings": strings
+        "strings": strings,
+        "secciones": secciones,
+        "secciones_sospechosas": secciones_sospechosas,
+        "upx": upx
     }
 
     print("[✓] Análisis estático completado.\n")
     return resultado
 
 
+# ── Prueba local ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import json
     import sys
 
-    # Si se pasa un argumento usa ese archivo, si no usa notepad.exe como prueba
     if len(sys.argv) > 1:
         archivo = sys.argv[1]
     else:
