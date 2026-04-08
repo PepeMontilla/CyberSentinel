@@ -1,6 +1,0 @@
-flask
-python-dotenv
-google-genai
-requests
-pefile
-reportlab

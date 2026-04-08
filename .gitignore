@@ -23,3 +23,14 @@ reports/*
 # 💻 Archivos del sistema operativo
 .DS_Store
 Thumbs.db
+
+# 🗂️ Archivos temporales y de trabajo local
+*.docx
+*.zip
+files_extracted/
+files.zip
+git_status.txt
+status.txt
+
+# 🖥️ Configuración del editor
+.vscode/
