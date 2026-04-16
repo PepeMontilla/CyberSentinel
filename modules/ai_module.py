@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -15,14 +16,15 @@ def get_ai_verdict(analysis_dict):
     Toma el diccionario con los hallazgos del .exe y le pide a la IA un veredicto.
     """
     
-    system_instruction = system_instruction = """
+    system_instruction = """
     Eres el motor de inteligencia artificial de CyberSentinel, un analizador estático forense de malware.
     Tu tarea es analizar los datos proporcionados que contienen la estructura PE, strings sospechosos y llamadas WinAPI de un archivo .exe.
     
     REGLAS ESTRICTAS:
     1. Actúa como un analista SOC Senior con 10 años de experiencia.
-    2. Si hay llamadas a funciones como 'ExitWindowsEx' o 'NtShutdownSystem', el riesgo es ALTO y el veredicto debe ser Malicioso.
-    3. Tu salida debe ser un JSON puro, utilizando EXACTAMENTE las siguientes llaves:
+    2. REGLA DE INSTALADORES: Si el nombre del archivo contiene "Setup", "Installer" o similares, y detectas la función 'ExitWindowsEx', NO lo marques como Malicioso automáticamente. Los instaladores a menudo necesitan reiniciar el sistema. Solo márcalo si hay otros indicadores de peligro real (como inyección de procesos o red sospechosa).
+    3. Si hay llamadas a funciones de inyección como 'CreateRemoteThread' o 'NtAllocateVirtualMemory' en archivos que NO son navegadores o apps de comunicación, el riesgo es ALTO.
+    4. Tu salida debe ser un JSON puro, utilizando EXACTAMENTE las siguientes llaves:
     {
         "veredicto": "Limpio" o "Sospechoso" o "Malicioso",
         "confianza": <número de 0 a 100>,
@@ -33,39 +35,45 @@ def get_ai_verdict(analysis_dict):
 
     user_content = f"Analiza este ejecutable y devuelve el JSON:\n{json.dumps(analysis_dict, indent=2)}"
 
-    try:
-        # Usamos la nueva estructura para llamar al modelo
-        response = client.models.generate_content(
-            model='gemini-2.5-flash', # Modelo actualizado y ultra rápido
-            contents=user_content,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.2,
-                response_mime_type="application/json",
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            # Usamos la nueva estructura para llamar al modelo
+            response = client.models.generate_content(
+                model='gemini-2.5-flash', # Usando el modelo para el que hay quota
+                contents=user_content,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.2,
+                    response_mime_type="application/json",
+                )
             )
-        )
 
-      
-        # Extraemos el texto y lo convertimos a diccionario Python
-        verdict_data = json.loads(response.text)
-        
-        resultado_final = {
-            "veredicto": verdict_data.get("veredicto", "Desconocido"),
-            "confianza": verdict_data.get("confianza", 0),
-            "explicacion_tecnica": verdict_data.get("explicacion_tecnica", "No se generó explicación."),
-            "recomendaciones": verdict_data.get("recomendaciones", "Sin recomendaciones.")
-        }
+            # Extraemos el texto y lo convertimos a diccionario Python
+            verdict_data = json.loads(response.text)
+            
+            return {
+                "veredicto": verdict_data.get("veredicto", "Desconocido"),
+                "confianza": verdict_data.get("confianza", 0),
+                "explicacion_tecnica": verdict_data.get("explicacion_tecnica", "No se generó explicación."),
+                "recomendaciones": verdict_data.get("recomendaciones", "Sin recomendaciones.")
+            }
 
-        return resultado_final
-
-    except Exception as e:
-        print(f"Error al conectar con Gemini: {e}")
-        return {
-            "veredicto": "Error",
-            "confianza": 0,
-            "explicacion_tecnica": f"Falla de API: {str(e)}",
-            "recomendaciones": "Verificar la conexión y la API Key."
-        }
+        except Exception as e:
+            if "503" in str(e) or "UNAVAILABLE" in str(e) or "429" in str(e):
+                if attempt < max_retries - 1:
+                    sleep_time = 2 ** attempt
+                    print(f"[*] Gemini ocupado (503/429). Reintentando ({attempt + 1}/{max_retries}) en {sleep_time}s...")
+                    time.sleep(sleep_time)
+                    continue
+            
+            print(f"Error al conectar con Gemini: {e}")
+            return {
+                "veredicto": "Error",
+                "confianza": 0,
+                "explicacion_tecnica": f"Falla de API después de {attempt+1} intentos: {str(e)}",
+                "recomendaciones": "Verificar la conexión y la API Key."
+            }
 
 
 def chat_forensic(question, analysis_context):
@@ -116,20 +124,28 @@ def chat_forensic(question, analysis_context):
     # Armamos el prompt inyectando el contexto y la pregunta
     user_content = f"CONTEXTO DEL ARCHIVO ANALIZADO:\n{context_str}\n\nPREGUNTA DEL USUARIO:\n{question}"
 
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=user_content,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.3, # Un poco más alto que el veredicto para que fluya más conversacional, pero sin alucinar
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=user_content,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.3,
+                )
             )
-        )
-        
-        return response.text
+            return response.text
 
-    except Exception as e:
-        print(f"Error en el chat forense: {e}")
-        return "Disculpa, ocurrió un error al procesar tu pregunta forense. Verifica la conexión."
+        except Exception as e:
+            if "503" in str(e) or "UNAVAILABLE" in str(e) or "429" in str(e):
+                if attempt < max_retries - 1:
+                    sleep_time = 2 ** attempt
+                    print(f"[*] Chat forense: Gemini ocupado (503/429). Reintentando ({attempt + 1}/{max_retries}) en {sleep_time}s...")
+                    time.sleep(sleep_time)
+                    continue
+            
+            print(f"Error en el chat forense: {e}")
+            return f"Disculpa, ocurrió un error (Intento {attempt+1}/{max_retries}) al procesar tu pregunta forense. Verifica la conexión."
 
  

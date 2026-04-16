@@ -10,6 +10,7 @@ __pycache__/
 
 # Base de datos local
 # Ignoramos la base de datos para no pisar los datos de tus compañeros
+instance/
 database/*.db
 database/*.sqlite3
 

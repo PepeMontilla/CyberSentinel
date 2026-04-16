@@ -13,6 +13,9 @@ app = Flask(__name__)
 # Se utiliza variable de entorno para la clave secreta, o se genera una aleatoria (segura por defecto)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY') or os.urandom(24)
 
+# Configurar límite de subida (100MB por defecto)
+app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 100)) * 1024 * 1024
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cybersentinel.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -106,16 +109,19 @@ def analyze():
                 }
                 veredicto_ia = get_ai_verdict(contexto_para_ia)
 
-                # Guardamos este nuevo análisis en la base de datos para el futuro
-                nuevo_reporte = ReporteAnalisis(
-                    hash_sha256=file_hash,
-                    nombre_archivo=nombre_archivo,
-                    nivel_riesgo=analisis_reglas['risk_score'],
-                    veredicto_ai=json.dumps(veredicto_ia) # Guardamos el dict como texto JSON
-                )
-                db.session.add(nuevo_reporte)
-                db.session.commit()
-                print(f"[*] NUEVO ANÁLISIS: {nombre_archivo} guardado en la Base de Datos.")
+                # Guardamos este nuevo análisis en la base de datos para el futuro solo si no hubo error
+                if veredicto_ia.get('veredicto') != 'Error':
+                    nuevo_reporte = ReporteAnalisis(
+                        hash_sha256=file_hash,
+                        nombre_archivo=nombre_archivo,
+                        nivel_riesgo=analisis_reglas['risk_score'],
+                        veredicto_ai=json.dumps(veredicto_ia) # Guardamos el dict como texto JSON
+                    )
+                    db.session.add(nuevo_reporte)
+                    db.session.commit()
+                    print(f"[*] NUEVO ANÁLISIS: {nombre_archivo} guardado en la Base de Datos.")
+                else:
+                    print(f"[*] ERROR DE IA: {nombre_archivo} NO fue guardado en la BD para permitir reintentos futuros.")
             # --- FIN DEL CACHÉ INTELIGENTE ---
 
             # Preparar datos para el template
@@ -134,8 +140,14 @@ def analyze():
             report_path = os.path.join(app.config['REPORTS_FOLDER'], report_filename)
             generate_pdf_report(analysis_data, report_path)
 
-            # Guardar en sesión para el chat y descarga
-            session['analysis_data'] = json.dumps(analysis_data)
+            # Guardar el JSON del análisis completo en disco para no sobrecargar la sesión
+            json_filename = f"analysis_{datos_crudos['metadata']['sha256']}.json"
+            json_path = os.path.join(app.config['REPORTS_FOLDER'], json_filename)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(analysis_data, f, ensure_ascii=False)
+
+            # Solo guardamos rutas cortas en la sesión
+            session['analysis_json_path'] = json_path
             session['report_path'] = report_path
 
             # VT Mock ya que la integración aún no está en pipeline
@@ -171,13 +183,15 @@ def chat():
     else:
         question = request.form.get('question')
 
-    analysis_context = session.get('analysis_data')
+    analysis_json_path = session.get('analysis_json_path')
 
-    if not question or not analysis_context:
+    if not question or not analysis_json_path or not os.path.exists(analysis_json_path):
         return {'error': 'Datos insuficientes para el chat'}, 400
 
     try:
-        analysis_data = json.loads(analysis_context)
+        with open(analysis_json_path, 'r', encoding='utf-8') as f:
+            analysis_data = json.load(f)
+            
         response = chat_forensic(question, analysis_data)
         return {'respuesta': response}
     except Exception as e:

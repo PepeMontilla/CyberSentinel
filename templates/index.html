@@ -557,6 +557,16 @@
         </ul>
     </nav>
 
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div style="max-width: 640px; margin: 20px auto; padding: 15px; background-color: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; border-radius: 8px; font-size: 14px; text-align: center;">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <section class="hero">
         <h1>Analiza cualquier .exe antes de ejecutarlo</h1>
         <p>Detección estática de malware con inteligencia artificial.</p>
@@ -694,6 +704,11 @@
         });
 
         function handleFile(file) {
+            const maxSize = 100 * 1024 * 1024; // 100MB en bytes
+            if (file.size > maxSize) {
+                alert('El archivo es demasiado grande (' + formatSize(file.size) + '). El límite máximo es de 100MB.');
+                return;
+            }
             selectedFile = file;
             document.getElementById('fileName').textContent = file.name;
             document.getElementById('fileSize').textContent = formatSize(file.size);

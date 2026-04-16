@@ -171,32 +171,37 @@ def _extraer_imports(pe: pefile.PE) -> dict:
 def _extraer_strings(ruta_archivo: str, min_longitud: int = 5) -> list:
     """
     Extrae strings legibles del binario y filtra los que coinciden
-    con patrones sospechosos. Devuelve lista sin duplicados.
+    con patrones sospechosos. Lee el archivo por bloques para ahorrar RAM.
     """
     strings_encontrados = set()
 
     try:
         with open(ruta_archivo, "rb") as f:
-            contenido = f.read()
-    except Exception as e:
-        print(f"[ERROR] No se pudo leer el archivo para extraer strings: {e}")
-        return []
-
-    string_actual = []
-    for byte in contenido:
-        if 32 <= byte <= 126:
-            string_actual.append(chr(byte))
-        else:
+            string_actual = []
+            while True:
+                bloque = f.read(65536) # Leer 64KB a la vez
+                if not bloque:
+                    break
+                
+                for byte in bloque:
+                    if 32 <= byte <= 126:
+                        string_actual.append(chr(byte))
+                    else:
+                        if len(string_actual) >= min_longitud:
+                            texto = "".join(string_actual).strip()
+                            if texto:
+                                strings_encontrados.add(texto)
+                        string_actual = []
+            
+            # Procesar el último string si quedó algo en el buffer
             if len(string_actual) >= min_longitud:
                 texto = "".join(string_actual).strip()
                 if texto:
                     strings_encontrados.add(texto)
-            string_actual = []
 
-    if len(string_actual) >= min_longitud:
-        texto = "".join(string_actual).strip()
-        if texto:
-            strings_encontrados.add(texto)
+    except Exception as e:
+        print(f"[ERROR] No se pudo leer el archivo para extraer strings: {e}")
+        return []
 
     strings_filtrados = []
     for texto in strings_encontrados:
@@ -262,27 +267,27 @@ def parse_exe(ruta_archivo: str) -> dict:
     print("[*] Extrayendo tabla de imports...")
     imports = _extraer_imports(pe)
     total_funciones = sum(len(v) for v in imports.values())
-    print(f"    → {len(imports)} DLLs | {total_funciones} funciones importadas")
+    print(f"    -> {len(imports)} DLLs | {total_funciones} funciones importadas")
 
     # Strings
     print("[*] Extrayendo strings sospechosos...")
     strings = _extraer_strings(ruta_archivo)
-    print(f"    → {len(strings)} strings sospechosos encontrados")
+    print(f"    -> {len(strings)} strings sospechosos encontrados")
 
-    # Secciones + Entropy  ← NUEVO
+    # Secciones + Entropy  <- NUEVO
     print("[*] Analizando secciones y calculando entropy...")
     secciones, secciones_sospechosas = _analizar_secciones(pe)
-    print(f"    → {len(secciones)} secciones totales | {len(secciones_sospechosas)} sospechosas")
+    print(f"    -> {len(secciones)} secciones totales | {len(secciones_sospechosas)} sospechosas")
     for s in secciones_sospechosas:
-        print(f"       ⚠  {s['nombre']} — entropy {s['entropy']}")
+        print(f"       !  {s['nombre']} - entropy {s['entropy']}")
 
-    # Detección UPX  ← NUEVO
+    # Detección UPX  <- NUEVO
     print("[*] Verificando empaquetado UPX...")
     upx = _detectar_upx(pe)
     if upx["detectado"]:
-        print(f"    → ⚠  UPX DETECTADO: {upx['secciones_encontradas']}")
+        print(f"    -> !  UPX DETECTADO: {upx['secciones_encontradas']}")
     else:
-        print("    → Sin empaquetado UPX")
+        print("    -> Sin empaquetado UPX")
 
     pe.close()
 
