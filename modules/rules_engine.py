@@ -35,12 +35,23 @@ WINAPI_DICT = {
     }
 }
 
-def classify_imports(parsed_imports):
+# --- LISTA BLANCA (WHITELIST) ---
+# Programas legítimos que usan técnicas avanzadas de inyección (IPC, Anticheats, etc.)
+PROGRAMAS_SEGUROS = [
+    "spotify.exe", 
+    "discord.exe", 
+    "chrome.exe", 
+    "code.exe", 
+    "msedge.exe",
+    "leagueclient.exe", 
+    "vgc.exe" # Vanguard Anticheat
+]
+
+# Modificamos la función para que reciba 'filename' por defecto vacío
+def classify_imports(parsed_imports, filename=""):
     """
-    Recibe un diccionario de imports del pe_parser y devuelve las coincidencias peligrosas.
-    
-    Ejemplo de entrada (parsed_imports):
-    {"kernel32.dll": ["CreateProcess", "Sleep"], "user32.dll": ["ExitWindowsEx"]}
+    Recibe un diccionario de imports del pe_parser y el nombre del archivo.
+    Devuelve las coincidencias peligrosas filtrando falsos positivos conocidos.
     """
     behaviors = []
     risk_score = 0
@@ -55,7 +66,6 @@ def classify_imports(parsed_imports):
                 if func in WINAPI_DICT[dll_lower]:
                     rule = WINAPI_DICT[dll_lower][func]
                     
-                    # Añadir al listado de comportamientos detectados
                     behaviors.append({
                         "severity": rule["severity"],
                         "category": rule["category"],
@@ -64,15 +74,31 @@ def classify_imports(parsed_imports):
                         "description": rule["desc"]
                     })
                     
-                    # Sumar al score total
                     risk_score += score_map.get(rule["severity"], 0)
 
-    # Determinar el veredicto preliminar basado puramente en las reglas
-    verdict = "CLEAN"
-    if risk_score >= 50:
+    is_whitelisted = False
+    if filename.lower() in PROGRAMAS_SEGUROS:
+        risk_score = 0  # Perdonamos el puntaje
+        is_whitelisted = True
+        
+        # Agregamos una nota para que la IA sepa por qué le bajamos el riesgo a 0
+        behaviors.append({
+            "severity": "INFO",
+            "category": "whitelist",
+            "function": "N/A",
+            "dll": "N/A",
+            "description": f"Excepción aplicada: '{filename}' es una aplicación confiable conocida."
+        })
+
+    # Determinar el veredicto preliminar
+    if is_whitelisted:
+        verdict = "CLEAN (Whitelist)"
+    elif risk_score >= 50:
         verdict = "MALICIOUS"
     elif risk_score >= 20:
         verdict = "SUSPICIOUS"
+    else:
+        verdict = "CLEAN"
 
     return {
         "behaviors": behaviors,
@@ -82,11 +108,13 @@ def classify_imports(parsed_imports):
 
 # Bloque de prueba local 
 if __name__ == "__main__":
-    # Simulamos lo que te entregaría la Persona 1 (pe_parser)
     mock_imports = {
-        "kernel32.dll": ["Sleep", "CreateRemoteThread"], # CreateRemoteThread es HIGH
-        "user32.dll": ["ExitWindowsEx", "MessageBoxA"]   # ExitWindowsEx es HIGH
+        "kernel32.dll": ["Sleep", "CreateRemoteThread"], # 50 pts
+        "user32.dll": ["ExitWindowsEx", "MessageBoxA"]   # 50 pts
     }
     
-    resultado = classify_imports(mock_imports)
-    print(resultado)
+    print("=== PRUEBA 1: Archivo Desconocido ===")
+    print(classify_imports(mock_imports, filename="troyano_oculto.exe"))
+    
+    print("\n=== PRUEBA 2: Spotify (Lista Blanca) ===")
+    print(classify_imports(mock_imports, filename="Spotify.exe"))

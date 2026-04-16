@@ -109,12 +109,16 @@ def generate_pdf_report(analysis_data, output_path):
                 severity_color = colors.red
             elif behavior['severity'] == 'MEDIUM':
                 severity_color = colors.orange
-
+            
+            severidad_formateada = Paragraph(
+                f"<font color='{severity_color}'><b>{behavior['severity']}</b></font>", 
+                normal_style
+            )
             behaviors_data.append([
                 behavior['function'],
                 behavior['dll'],
                 behavior['category'],
-                f"<font color='{severity_color}'>{behavior['severity']}</font>",
+                severidad_formateada,
                 behavior['description']
             ])
 
